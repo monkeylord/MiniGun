@@ -1,0 +1,33 @@
+{
+  "name": "minigun",
+  "version": "0.0.1",
+  "description": "Lightweight Bitcoin Stress Test Tool.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/monkeylord/MiniGun.git"
+  },
+  "keywords": [
+    "bitcoin",
+    "bsv",
+    "stress",
+    "test"
+  ],
+  "author": "Monkeylord",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/monkeylord/MiniGun/issues"
+  },
+  "homepage": "https://github.com/monkeylord/MiniGun#readme",
+  "dependencies": {
+    "bitcoin-ibe": "^1.2.2",
+    "bitcore-p2p-cash": "^1.2.1",
+    "bsv": "^0.26.4",
+    "electrum-client": "0.0.6",
+    "inquirer": "^6.3.1",
+    "node-fetch": "^2.3.0"
+  }
+}
