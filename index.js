@@ -1,6 +1,4 @@
-function exec() {
-    global.eval(fs.readFileSync('index.js').toString())
-}
+#!/usr/bin/env node
 
 //global.SplitRato = 25   // 分裂率 决定了一个父UTXO应该分裂为几个子UTXO
 //global.MaxLevel = Math.floor(Math.log(1000000000000)/Math.log(global.SplitRato))    // 用于预计算费率表
@@ -14,7 +12,7 @@ global.recycleTheshold = 300    // 回收阈值，决定了每个回收交易最
 //global.LevelTheshold = 5     // level高于此值则尝试快速分裂
 
 global.debug = true     // 表示调试模式是否开启，没什么用
-//global.mock = true      // Mock测试模式，并不真的广播TX，不消耗弹药
+global.mock = false      // Mock测试模式，并不真的广播TX，不消耗弹药
 global.log = console // 全局日志，没什么用
 global.bullets = []
 global.load = false
@@ -28,6 +26,7 @@ var BlockChain = require('./lib/blockchain')
 var Client = require('./lib/client')
 var Log = require('./lib/log')
 var fs = require('fs')
+var cluster = require('cluster')
 
 var SourceAddr
 var SourcePrivateKey
@@ -40,10 +39,15 @@ var barrelPrivateKey
 var chain
 var barrel
 
+var initialLoaded = false
 global.reload = function (continueFire) {
-    barrel.loadFrom(SourcePrivateKey)
-    barrel.loadFrom(recyclePrivateKey)
-    if (!continueFire && !global.load) barrel.loadFrom(barrelPrivateKey)
+    if(global.threshold == 0 || !initialLoaded){
+        barrel.loadFrom(SourcePrivateKey)
+        barrel.loadFrom(recyclePrivateKey)
+        if (!continueFire && !global.load) barrel.loadFrom(barrelPrivateKey)
+
+        initialLoaded = true
+    }
 }
 
 //  First trigger
@@ -51,20 +55,22 @@ var questions = [
     { type: "password", name: "key", message: "Ammo Source - Bitcoin Private Key:" },
     { type: "input", name: "peer", message: "Peer Addr:", default: '39.105.149.36' },
     { type: "input", name: "log", message: "Log File:", default: `Minigun.${new Date().getTime()}.log` },
-    { type: "input", name: "mode", message: "Mode(auto/load/fire)", default: "auto" }
+    { type: "input", name: "mode", message: "Mode(auto/load/fire)", default: "auto" },
+    { type: "Number", name: "threshold", message: "Max Transaction Per Block", default: 0 }
 ]
 
 // 询问用户弹药私钥地址，以及分裂率，更高的分裂率更爆发，但是往往只能持续两三个块。低分裂率更持久
 inquirer.prompt(questions).then(answers => {
     if (bsv.PrivateKey.isValid(answers.key)) {
         /*
-
+ 
         global.MaxLevel = Math.floor(Math.log(1000000000000)/Math.log(global.SplitRato))
         Barrel.calcFeeLevel()
         */
+        global.threshold = answers.threshold
         global.log = new Log(answers.log)
         process.on("SIGINT", function () {
-            if(global.load){
+            if (global.load) {
                 fs.writeFileSync("txs.json", JSON.stringify(global.bullets, " "))
                 global.log.log(`[Minigun] ${global.bullets.length} TX bullet(s) saved to txs.json`)
             }
@@ -90,12 +96,12 @@ inquirer.prompt(questions).then(answers => {
                 barrel.loadFrom(SourcePrivateKey, utxos)
             }
         })
-        
+
         if (answers.mode == "fire") {
             // fire prepared TXs
             global.log.log("[Minigun] Mode fire, loading TXs from txs.json")
             global.bullets = JSON.parse(fs.readFileSync("txs.json")).map(tx => bsv.Transaction(tx))
-            chain.getReady().then(()=>{
+            chain.getReady().then(() => {
                 var startTime = new Date().getTime()
                 global.bullets.forEach(tx => chain.broadcast(tx))
                 global.log.log(`[Minigun] ${global.bullets.length} prepared ammo fired in ${new Date().getTime() - startTime}ms, ${Math.floor(global.bullets.length / ((new Date().getTime() - startTime) / 1000))} TPS.`)

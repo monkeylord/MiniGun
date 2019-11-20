@@ -1,6 +1,6 @@
 {
-  "name": "minigun",
-  "version": "0.0.1",
+  "name": "minigun-sv",
+  "version": "0.1.10",
   "description": "Lightweight Bitcoin Stress Test Tool.",
   "main": "index.js",
   "scripts": {
@@ -16,6 +16,9 @@
     "stress",
     "test"
   ],
+  "bin": {
+    "minigun": "./index.js"
+  },
   "author": "Monkeylord",
   "license": "MIT",
   "bugs": {
